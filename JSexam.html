@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JS exam Дюндикова</title>
+    <link rel="stylesheet" href="JSexam.css">
+</head>
+
+<body>
+    <h1>JS exam Дюндикова</h1> <br>
+
+    <div id="movie-list"></div>
+
+    <div id="pagination"></div>
+
+    <div id="movie-details-modal"></div>
+
+    <div id="search-form">
+        <label for="search-input">MOVIE SEARCH(only eng):</label>
+        <input type="text" id="search-input" placeholder="movie title">
+        <select id="type-select">
+            <option value="movie">film</option>
+            <option value="series">series</option>
+            <option value="episode">episode</option>
+        </select>
+        <button onclick="searchMovies()">SEARCH</button>
+    </div>
+
+    <script>
+
+        //API
+        const apiKey = 'd024af99';
+        // текущая страница
+        let currentPage = 1;
+        // Функция для поиска фильмов
+        function searchMovies() {
+            const searchInput = document.getElementById('search-input').value;
+            const typeSelect = document.getElementById('type-select').value;
+
+            //URL для запроса к API OMDB
+            const apiUrl = `https://www.omdbapi.com/?apikey=${apiKey}&s=${searchInput}&type=${typeSelect}&page=${currentPage}`;
+
+            // Отправляем запрос к API
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.Response === 'True') {
+                        showMovieList(data.Search || []);
+
+                        if (data.totalResults) {
+                            const totalPages = Math.ceil(data.totalResults / 10);
+                            showPagination(totalPages);
+                        }
+                    } else {
+                        throw new Error(data.Error || 'Неизвестная ошибка');
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка:', error.message);
+                    alert('Произошла ошибка!');
+                });
+        }
+
+        // Функция для отображения списка фильмов
+        function showMovieList(movies) {
+            const movieListDiv = document.getElementById('movie-list');
+            movieListDiv.innerHTML = '';
+
+            if (movies.length > 0) {
+                // Проходим по каждому фильму и отображаем его
+                movies.forEach(movie => {
+                    const movieItem = document.createElement('div');
+                    movieItem.classList.add('movie-item');
+
+                    movieItem.innerHTML = `<img src="${movie.Poster}" alt="${movie.Title}">`;
+
+                    const detailsButton = document.createElement('button');
+                    detailsButton.textContent = 'More info';
+                    detailsButton.addEventListener('click', () => {
+                        showMovieDetails(movie.imdbID);
+                    });
+                    movieItem.appendChild(detailsButton);
+
+                    movieListDiv.appendChild(movieItem);
+                });
+            } else {
+                // В случае отсутствия результатов выводим сообщение
+                movieListDiv.innerHTML = 'Фильм не найден!';
+            }
+        }
+
+        // Функция для отображения страниц
+        function showPagination(totalPages) {
+            const paginationDiv = document.getElementById('pagination');
+            paginationDiv.innerHTML = '';
+
+            for (let i = 1; i <= totalPages; i++) {
+                // Создаем кнопку для каждой страницы и добавляем обработчик события
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.addEventListener('click', () => {
+                    currentPage = i;
+                    searchMovies();
+                });
+                paginationDiv.appendChild(pageButton);
+            }
+        }
+
+        // Функция для отображения подробной информации о фильме
+        function showMovieDetails(imdbID) {
+            const apiUrl = `https://www.omdbapi.com/?apikey=${apiKey}&i=${imdbID}`;
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    displayMovieDetailsModal(data);
+                })
+                .catch(error => console.error('Ошибка!', error));
+        }
+
+        // Функция для отображения модального окна 
+        function displayMovieDetailsModal(movie) {
+            const modal = document.getElementById('movie-details-modal');
+            modal.innerHTML = '';
+
+            const modalContent = document.createElement('div');
+            modalContent.classList.add('modal-content');
+
+            const modalImage = document.createElement('div');
+            modalImage.classList.add('modal-image');
+            modalImage.innerHTML = `<img src="${movie.Poster}" alt="${movie.Title}">`;
+
+            const modalDescription = document.createElement('div');
+            modalDescription.classList.add('modal-description');
+            modalDescription.innerHTML = `
+    <h2>${movie.Title}</h2>
+    <table>
+      
+        <td>Genre: ${movie.Genre}</td>
+      
+      
+        <td>Released: ${movie.Released}</td>
+      
+      
+        <td>Producer: ${movie.Director}</td>
+      
+      
+        <td>Rating IMDb: ${movie.imdbRating}</td>
+      
+      <tr>
+        <td>Actors:</td>
+        <td>${movie.Actors}</td>
+      
+      
+        <td>Description:</td>
+        <td>${movie.Plot}</td>
+      </tr>
+    </table>
+            `;
+
+            modalContent.appendChild(modalImage);
+            modalContent.appendChild(modalDescription);
+
+            const closeButton = document.createElement('button');
+            closeButton.textContent = 'Close';
+            closeButton.addEventListener('click', () => {
+                closeModal();
+            });
+
+            modalContent.appendChild(closeButton);
+            modal.appendChild(modalContent);
+
+            openModal();
+        }
+
+        // Функция для открытия модального окна
+        function openModal() {
+            const modal = document.getElementById('movie-details-modal');
+            modal.style.display = 'block';
+        }
+
+        // Функция для закрытия модального окна
+        function closeModal() {
+            const modal = document.getElementById('movie-details-modal');
+            modal.style.display = 'none';
+        }
+    </script>
+</body>
+
+</html>
